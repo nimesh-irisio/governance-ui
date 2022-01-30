@@ -26,6 +26,7 @@ import { getProgramVersionForRealm } from '@models/registry/api'
 import Input from './inputs/Input'
 import { StyledLabel } from './inputs/styles'
 import Switch from './Switch'
+import { FunctionComponent, useState } from 'react'
 
 function bufferToBase64(buf) {
   const binstr = Array.prototype.map
@@ -36,8 +37,12 @@ function bufferToBase64(buf) {
   return btoa(binstr)
 }
 
-const TokenBalanceCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
+const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const { councilMint, mint, realm } = useRealm()
+  const [checked, setChecked] = useState<boolean>(false)
+  const [email, setEmail] = useState<string>('')
+  const [phone, setPhone] = useState<string>('')
+  const [telegram, setTelegram] = useState<string>('')
 
   const isDepositVisible = (
     depositMint: MintInfo | undefined,
@@ -60,7 +65,7 @@ const TokenBalanceCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
     if (connected) {
       console.log(wallet)
       const ticks = 1000
-      const signature = wallet.signMessage(
+      const signature = wallet?.signMessage(
         new TextEncoder().encode(
           'DU9mJ28rE8zSoaeqdTpBMEvG27YFE8b4iXq1e17QrWe2' +
             'HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy' +
@@ -81,21 +86,59 @@ const TokenBalanceCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
     <div className="bg-bkg-2 p-4 md:p-6 rounded-lg">
       <h3 className="mb-4">Notifications</h3>
       {hasLoaded ? (
-        !connected ? (
+        // !connected ? (
+        false ? (
           <>
-            <h4 className="mb-4">Connect wallet to see options</h4>
+            <div className="text-sm text-th-fgd-1">
+              Connect wallet to see options
+            </div>
           </>
         ) : (
           <>
-            <div className="flex flex-row items-center">
+            <div className="text-sm text-th-fgd-1 flex flex-row items-center justify-between my-4">
               Notify on Proposal Changes
-              <Switch onChange={(checked) => {}} />
+              <Switch onChange={() => setChecked(!checked)} checked={checked} />
             </div>
-            <Input type="" value="you@gmail.com" />
-            <Input type={''} value="+1 555-5555" />
-            <Input type={''} value="telegramid" />
 
-            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-4">
+            <InputRow label="E-mail">
+              <Input
+                className="my-4"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+              />
+            </InputRow>
+
+            <InputRow label="SMS">
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1-555-5555"
+              />
+            </InputRow>
+
+            <InputRow label="Telegram">
+              <Input
+                type="text"
+                value={telegram}
+                onChange={(e) => setTelegram(e.target.value)}
+                placeholder="TelegramId"
+              />
+            </InputRow>
+
+            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-8">
+              <Button
+                className="sm:w-1/2"
+                onClick={() => {
+                  setEmail('')
+                  setPhone('')
+                  setTelegram('')
+                }}
+              >
+                Clear
+              </Button>
               <Button
                 tooltipMessage="Save settings for notifications"
                 className="sm:w-1/2"
@@ -113,6 +156,21 @@ const TokenBalanceCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
           <div className="animate-pulse bg-bkg-3 h-10 rounded-lg" />
         </>
       )}
+    </div>
+  )
+}
+
+interface InputRowProps {
+  label: string
+}
+
+const InputRow: FunctionComponent<InputRowProps> = ({ children, label }) => {
+  return (
+    <div className="flex justify-between items-center content-center my-4">
+      <div className="border opacity-60 inline-block px-2 py-1 rounded-full text-xs w-40 h-8 text-center mr-4 flex items-center justify-center">
+        {label}
+      </div>
+      {children}
     </div>
   )
 }
@@ -401,4 +459,4 @@ const TokenDeposit = ({
   )
 }
 
-export default TokenBalanceCard
+export default NotificationsCard
