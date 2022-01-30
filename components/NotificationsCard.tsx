@@ -26,7 +26,13 @@ import { getProgramVersionForRealm } from '@models/registry/api'
 import Input from './inputs/Input'
 import { StyledLabel } from './inputs/styles'
 import Switch from './Switch'
-import { FunctionComponent, useState } from 'react'
+import React, { FunctionComponent, useState } from 'react'
+import {
+  ChatAltIcon,
+  MailIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/solid'
+import { string } from 'superstruct'
 
 function bufferToBase64(buf) {
   const binstr = Array.prototype.map
@@ -40,6 +46,7 @@ function bufferToBase64(buf) {
 const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const { councilMint, mint, realm } = useRealm()
   const [checked, setChecked] = useState<boolean>(false)
+  const [hasUnsavedChanges, setUnsavedChanges] = useState<boolean>(false)
   const [email, setEmail] = useState<string>('')
   const [phone, setPhone] = useState<string>('')
   const [telegram, setTelegram] = useState<string>('')
@@ -82,12 +89,35 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   const hasLoaded = mint || councilMint
 
+  const handleEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value)
+    setUnsavedChanges(true)
+  }
+
+  const handlePhone = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(e.target.value)
+    setUnsavedChanges(true)
+  }
+
+  const handleTelegram = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTelegram(e.target.value)
+    setUnsavedChanges(true)
+  }
+
+  const handleCheck = (bool: boolean) => {
+    setChecked(bool)
+    if (!bool) {
+      // toggling off is essentially canceling and reverting any unsaved changes
+      setUnsavedChanges(false)
+      // TODO: reset email/phone/telegram to initial state
+    }
+  }
+
   return (
     <div className="bg-bkg-2 p-4 md:p-6 rounded-lg">
       <h3 className="mb-4">Notifications</h3>
       {hasLoaded ? (
-        // !connected ? (
-        false ? (
+        !connected ? (
           <>
             <div className="text-sm text-th-fgd-1">
               Connect wallet to see options
@@ -95,59 +125,80 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
           </>
         ) : (
           <>
-            <div className="text-sm text-th-fgd-1 flex flex-row items-center justify-between my-4">
-              Notify on Proposal Changes
-              <Switch onChange={() => setChecked(!checked)} checked={checked} />
+            <div>
+              <div className="text-sm text-th-fgd-1 flex flex-row items-center justify-between my-4">
+                Notifi me on DAO Proposal Changes
+                <Switch onChange={handleCheck} checked={checked} />
+              </div>
+              {!checked && (
+                <div className="text-sm text-fgd-3">
+                  When activated, please sign the transaction.
+                </div>
+              )}
             </div>
 
-            <InputRow label="E-mail">
-              <Input
-                className="my-4"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-              />
-            </InputRow>
+            {checked && (
+              <>
+                <InputRow
+                  label="E-mail"
+                  icon={
+                    <MailIcon className="mr-1.5 h-4 text-primary-light w-4" />
+                  }
+                >
+                  <Input
+                    className="my-4"
+                    type="email"
+                    value={email}
+                    onChange={handleEmail}
+                    placeholder="you@email.com"
+                  />
+                </InputRow>
 
-            <InputRow label="SMS">
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1-555-5555"
-              />
-            </InputRow>
+                <InputRow
+                  label="SMS"
+                  icon={
+                    <ChatAltIcon className="mr-1.5 h-4 text-primary-light w-4" />
+                  }
+                >
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={handlePhone}
+                    placeholder="+1 XXX-XXXX"
+                  />
+                </InputRow>
 
-            <InputRow label="Telegram">
-              <Input
-                type="text"
-                value={telegram}
-                onChange={(e) => setTelegram(e.target.value)}
-                placeholder="TelegramId"
-              />
-            </InputRow>
+                <InputRow
+                  label="Telegram"
+                  icon={
+                    <PaperAirplaneIcon
+                      className="mr-1.5 h-4 text-primary-light w-4"
+                      style={{ transform: 'rotate(45deg)' }}
+                    />
+                  }
+                >
+                  <Input
+                    type="text"
+                    value={telegram}
+                    onChange={handleTelegram}
+                    placeholder="Telegram ID"
+                  />
+                </InputRow>
 
-            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-8">
-              <Button
-                className="sm:w-1/2"
-                onClick={() => {
-                  setEmail('')
-                  setPhone('')
-                  setTelegram('')
-                }}
-              >
-                Clear
-              </Button>
-              <Button
-                tooltipMessage="Save settings for notifications"
-                className="sm:w-1/2"
-                disabled={!communityDepositVisible}
-                onClick={handleClick}
-              >
-                Save
-              </Button>
-            </div>
+                <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-8 justify-end">
+                  {hasUnsavedChanges && (
+                    <Button
+                      tooltipMessage="Save settings for notifications"
+                      className="sm:w-1/2"
+                      disabled={!hasUnsavedChanges}
+                      onClick={handleClick}
+                    >
+                      Save
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
           </>
         )
       ) : (
@@ -162,12 +213,18 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
 interface InputRowProps {
   label: string
+  icon: React.ReactNode
 }
 
-const InputRow: FunctionComponent<InputRowProps> = ({ children, label }) => {
+const InputRow: FunctionComponent<InputRowProps> = ({
+  children,
+  icon,
+  label,
+}) => {
   return (
     <div className="flex justify-between items-center content-center my-4">
-      <div className="border opacity-60 inline-block px-2 py-1 rounded-full text-xs w-40 h-8 text-center mr-4 flex items-center justify-center">
+      <div className="mr-2 py-1 text-sm w-40 h-8 flex items-center">
+        {icon}
         {label}
       </div>
       {children}
