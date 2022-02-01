@@ -417,7 +417,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
       const ticks = Math.round(Date.now() / 1000)
       const signature = wallet.signMessage(
         new TextEncoder().encode(
-          'DU9mJ28rE8zSoaeqdTpBMEvG27YFE8b4iXq1e17QrWe2' +
+          `${wallet?.publicKey}` +
             'HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy' +
             ticks.toString()
         ),
@@ -432,7 +432,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
             .post('https://api.notifi.network/api/gql', {
               query: `mutation logInFromDao {
             logInFromDao(daoLogInInput: {
-              walletPublicKey: "DU9mJ28rE8zSoaeqdTpBMEvG27YFE8b4iXq1e17QrWe2",
+              walletPublicKey: "${wallet?.publicKey}",
               tokenAddress: "HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy",
               timestamp: ${ticks}
             }, signature: "${bufferToBase64(p)}") {
@@ -522,11 +522,12 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   useEffect(() => {
     if (connected && jwt != null) {
+      console.warn('in use effect')
       getExistingTargetGroup()
       getFilter()
       getSourceGroup()
     }
-  }, [connected, jwt, getExistingTargetGroup, getFilter, getSourceGroup])
+  }, [jwt, connected])
 
   return (
     <div className="bg-bkg-2 p-4 md:p-6 rounded-lg">
