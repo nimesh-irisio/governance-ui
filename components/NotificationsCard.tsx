@@ -24,7 +24,12 @@ import { withFinalizeVote } from '@solana/spl-governance'
 import { chunks } from '@utils/helpers'
 import { getProgramVersionForRealm } from '@models/registry/api'
 import Input from './inputs/Input'
-import React, { FunctionComponent, useEffect, useState } from 'react'
+import React, {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import {
   ChatAltIcon,
   MailIcon,
@@ -79,7 +84,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const connection = useWalletStore((s) => s.connection.current)
   const [jwt, setJwt] = useLocalStorageStringState('notifi-jwt', null)
 
-  const getExistingTargetGroup = () => {
+  const getExistingTargetGroup = useCallback(() => {
     const config = {
       headers: { Authorization: `Bearer ${jwt}` },
     }
@@ -146,8 +151,9 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }
-  const getSourceGroup = () => {
+  }, [jwt])
+
+  const getSourceGroup = useCallback(() => {
     const config = {
       headers: { Authorization: `Bearer ${jwt}` },
     }
@@ -171,8 +177,8 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }
-  const getFilter = () => {
+  }, [jwt])
+  const getFilter = useCallback(() => {
     const config = {
       headers: { Authorization: `Bearer ${jwt}` },
     }
@@ -196,7 +202,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }
+  }, [jwt])
 
   const createAlert = (tgId: string) => {
     const config = {
@@ -522,7 +528,6 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   useEffect(() => {
     if (connected && jwt != null) {
-      console.warn('in use effect')
       getExistingTargetGroup()
       getFilter()
       getSourceGroup()
