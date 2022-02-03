@@ -66,6 +66,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const [storedEmailId, setStoredEmailId] = useState<string>('')
   const [storedSmsId, setStoredSmsId] = useState<string>('')
   const [storedTelegramId, setStoredTelegramId] = useState<string>('')
+  const enableTelegramInput = false
   const isDepositVisible = (
     depositMint: MintInfo | undefined,
     realmMint: PublicKey | undefined
@@ -317,6 +318,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
               }) {
                 id
                 name
+                telegramId
               }
             }`,
           },
@@ -325,6 +327,12 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
         .then((resp) => {
           console.log(resp.data.data.createTelegramTarget)
           resolve(resp.data.data.createTelegramTarget.id)
+          let telegramLink =
+            'https://t.me/NotifiNetworkBot?start=' +
+            resp.data.data.createTelegramTarget.telegramId
+          setTelegram(telegramLink)
+          setStoredTelegram(telegramLink)
+          window.open(telegramLink)
         })
         .catch((err) => {
           console.log('Request failed: ' + JSON.stringify(err))
@@ -341,26 +349,35 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
     const config = {
       headers: { Authorization: `Bearer ${jwt}` },
     }
+    let emailIds = new Array<string>()
+    emailIds.push(emailId)
+    let smsIds = new Array<string>()
+    smsIds.push(smsId)
+
     return new Promise<string>((resolve, reject) => {
       axios
         .post(
           'https://api.notifi.network/api/gql',
           {
-            query: `mutation createTargetGroup {
-              createTargetGroup(targetGroupInput: {
-                id: "${targetGroup}"
-                emailTargetIds: ["${emailId}"],
-                name: "husky dao notifications"
-              }) {
+            query: `mutation createTargetGroup($targetGroupInput: TargetGroupInput!) {
+              createTargetGroup(targetGroupInput: $targetGroupInput) {
                 id
                 name
               }
             }`,
+            variables: {
+              targetGroupInput: {
+                id: targetGroup,
+                emailTargetIds: emailIds,
+                smsTargetIds: smsIds,
+                name: 'husky dao notifications',
+              },
+            },
           },
           config
         )
         .then((resp) => {
-          console.log(resp.data.data.createTargetGroup)
+          console.log(resp)
           resolve(resp.data.data.createTargetGroup.id)
         })
         .catch((err) => {
@@ -417,11 +434,11 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const handleSave = async function () {
     setLoading(true)
     // user is not authenticated
-    if (!jwt) {
+    if (!jwt && wallet) {
       console.log(wallet)
       console.log(jwt)
       const ticks = Math.round(Date.now() / 1000)
-      const signature = wallet.signMessage(
+      const signature = (wallet as any).signMessage(
         new TextEncoder().encode(
           `${wallet?.publicKey}` +
             'HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy' +
@@ -553,9 +570,11 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
               {errorMessage.length > 0 ? (
                 <div className="text-sm text-red">{errorMessage}</div>
               ) : (
-                <div className="text-sm text-fgd-3">
-                  When prompted, sign the transaction.
-                </div>
+                !jwt && (
+                  <div className="text-sm text-fgd-3">
+                    When prompted, sign the transaction.
+                  </div>
+                )
               )}
             </div>
             <InputRow
@@ -585,22 +604,24 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
               />
             </InputRow>
 
-            <InputRow
-              label="Telegram"
-              icon={
-                <PaperAirplaneIcon
-                  className="mr-1.5 h-4 text-primary-light w-4"
-                  style={{ transform: 'rotate(45deg)' }}
+            {enableTelegramInput && (
+              <InputRow
+                label="Telegram"
+                icon={
+                  <PaperAirplaneIcon
+                    className="mr-1.5 h-4 text-primary-light w-4"
+                    style={{ transform: 'rotate(45deg)' }}
+                  />
+                }
+              >
+                <Input
+                  type="text"
+                  value={telegram}
+                  onChange={handleTelegram}
+                  placeholder="Telegram ID"
                 />
-              }
-            >
-              <Input
-                type="text"
-                value={telegram}
-                onChange={handleTelegram}
-                placeholder="Telegram ID"
-              />
-            </InputRow>
+              </InputRow>
+            )}
 
             <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-4 justify-end">
               {hasUnsavedChanges && (
