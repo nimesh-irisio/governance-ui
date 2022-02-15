@@ -637,6 +637,7 @@ const TokenDeposit = ({
               await withFinalizeVote(
                 instructions,
                 realmInfo!.programId,
+                realmInfo!.programVersion!,
                 realm!.pubkey,
                 proposal.account.governance,
                 proposal.pubkey,
