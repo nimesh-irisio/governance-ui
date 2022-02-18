@@ -1300,10 +1300,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@notifi-network/notifi-react-hooks@^0.0.1-alpha.13":
-  version "0.0.1-alpha.13"
-  resolved "https://registry.yarnpkg.com/@notifi-network/notifi-react-hooks/-/notifi-react-hooks-0.0.1-alpha.13.tgz#812fc591665062871bd1dfdf35bc0b11f4b1e6ca"
-  integrity sha512-YFVD7R/0YknCw9Q7iW6qE/s5WN39m3DNAcTW3GHYBtlywbmNwuDd+C7Xiq3vP6IoSxBt9EdOj5xXUjvXzpLO9A==
+"@notifi-network/notifi-react-hooks@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@notifi-network/notifi-react-hooks/-/notifi-react-hooks-0.0.1.tgz#3c48b137553da088528b3cd870a811e74e153062"
+  integrity sha512-Dcaks9DtAVNdapaE8ku4qU79/R7nBPQOWse4DVCddmx3dMcYLUVCQbd0Lyp6hAGYBNNoQ5nj+MZvm9uLczhm1g==
   dependencies:
     axios "^0.26.0"
     react "^17.0.2"

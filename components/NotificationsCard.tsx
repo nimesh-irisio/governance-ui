@@ -95,7 +95,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   const getTargetGroups = useGetTargetGroups()
   const getExistingTargetGroup = useCallback(() => {
-    getTargetGroups({})
+    getTargetGroups()
       .then((resp) => {
         const targetGroup = resp[0]
         console.log(targetGroup)
@@ -128,7 +128,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   const getSourceGroups = useGetSourceGroups()
   const getSourceGroup = useCallback(() => {
-    getSourceGroups({})
+    getSourceGroups()
       .then((resp) => {
         const sourceGroup = resp[0]
         console.log(sourceGroup)
@@ -141,7 +141,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
 
   const getFilters = useGetFilters()
   const getFilter = useCallback(() => {
-    getFilters({})
+    getFilters()
       .then((resp) => {
         const filter = resp[0]
         console.log(filter)
