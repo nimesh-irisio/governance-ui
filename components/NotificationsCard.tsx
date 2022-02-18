@@ -35,10 +35,19 @@ import {
   MailIcon,
   PaperAirplaneIcon,
 } from '@heroicons/react/solid'
-import axios from 'axios'
-import useLocalStorageState, {
-  useLocalStorageStringState,
-} from '@hooks/useLocalStorageState'
+import {
+  useCreateAlert,
+  useCreateEmailTarget,
+  useCreateSmsTarget,
+  useCreateTargetGroup,
+  useCreateTelegramTarget,
+  useGetFilters,
+  useGetSourceGroups,
+  useGetTargetGroups,
+  useLoginFromDao,
+  useNotifiJwt,
+  useUpdateTargetGroup,
+} from '@notifi-network/notifi-react-hooks'
 
 function bufferToBase64(buf) {
   const binstr = Array.prototype.map
@@ -83,346 +92,189 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   const wallet = useWalletStore((s) => s.current)
   const connected = useWalletStore((s) => s.connected)
   const connection = useWalletStore((s) => s.connection.current)
-  const [jwt, setJwt] = useLocalStorageStringState('notifi-jwt', null)
 
+  const getTargetGroups = useGetTargetGroups()
   const getExistingTargetGroup = useCallback(() => {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-
-    axios
-      .post(
-        'https://api.notifi.network/api/gql',
-        {
-          query: `query targetGroup {
-              targetGroup() {
-                id
-                name
-                emailTargets {
-                  id
-                  name
-                  emailAddress
-                }
-                smsTargets {
-                  id
-                  name
-                  phoneNumber
-                }
-                telegramTargets {
-                  id
-                  name
-                  telegramId
-                }
-              }
-            }`,
-        },
-        config
-      )
+    getTargetGroups({})
       .then((resp) => {
-        console.log(resp.data.data.targetGroup[0])
-        if (resp.data.data.targetGroup[0] != null) {
-          setTargetGroup(resp.data.data.targetGroup[0].id)
-          if (resp.data.data.targetGroup[0].emailTargets.length > 0) {
-            setEmail(resp.data.data.targetGroup[0].emailTargets[0].emailAddress)
-            setStoredEmail(
-              resp.data.data.targetGroup[0].emailTargets[0].emailAddress
-            )
-            setStoredEmailId(resp.data.data.targetGroup[0].emailTargets[0].id)
+        const targetGroup = resp[0]
+        console.log(targetGroup)
+        if (targetGroup != null) {
+          setTargetGroup(targetGroup.id ?? '')
+          if (targetGroup.emailTargets.length > 0) {
+            const emailTarget = targetGroup.emailTargets[0]
+            setEmail(emailTarget.emailAddress ?? '')
+            setStoredEmail(emailTarget.emailAddress ?? '')
+            setStoredEmailId(emailTarget.id ?? '')
           }
-          if (resp.data.data.targetGroup[0].smsTargets.length > 0) {
-            setPhone(resp.data.data.targetGroup[0].smsTargets[0].phoneNumber)
-            setStoredSms(
-              resp.data.data.targetGroup[0].smsTargets[0].phoneNumber
-            )
-            setStoredSmsId(resp.data.data.targetGroup[0].smsTargets[0].id)
+          if (targetGroup.smsTargets.length > 0) {
+            const smsTarget = targetGroup.smsTargets[0]
+            setPhone(smsTarget.phoneNumber ?? '')
+            setStoredSms(smsTarget.phoneNumber ?? '')
+            setStoredSmsId(smsTarget.id ?? '')
           }
-          if (resp.data.data.targetGroup[0].telegramTargets.length > 0) {
-            setTelegram(
-              resp.data.data.targetGroup[0].telegramTargets[0].telegramId
-            )
-            setStoredTelegram(
-              resp.data.data.targetGroup[0].telegramTargets[0].telegramId
-            )
-            setStoredTelegramId(
-              resp.data.data.targetGroup[0].telegramTargets[0].id
-            )
+          if (targetGroup.telegramTargets.length > 0) {
+            const telegramTarget = targetGroup.telegramTargets[0]
+            setTelegram(telegramTarget.telegramId ?? '')
+            setStoredTelegram(telegramTarget.telegramId ?? '')
+            setStoredTelegramId(telegramTarget.id ?? '')
           }
         }
       })
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }, [jwt])
+  }, [getTargetGroups])
 
+  const getSourceGroups = useGetSourceGroups()
   const getSourceGroup = useCallback(() => {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    axios
-      .post(
-        'https://api.notifi.network/api/gql',
-        {
-          query: `query sourceGroup {
-              sourceGroup() {
-                id
-                name
-              }
-            }`,
-        },
-        config
-      )
+    getSourceGroups({})
       .then((resp) => {
-        console.log(resp.data.data.sourceGroup[0])
-        setSourceGroup(resp.data.data.sourceGroup[0].id)
+        const sourceGroup = resp[0]
+        console.log(sourceGroup)
+        setSourceGroup(sourceGroup.id ?? '')
       })
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }, [jwt])
+  }, [getSourceGroups])
+
+  const getFilters = useGetFilters()
   const getFilter = useCallback(() => {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    axios
-      .post(
-        'https://api.notifi.network/api/gql',
-        {
-          query: `query filter {
-              filter() {
-                id
-                name
-              }
-            }`,
-        },
-        config
-      )
+    getFilters({})
       .then((resp) => {
-        console.log(resp.data.data.filter[0])
-        setFilter(resp.data.data.filter[0].id)
+        const filter = resp[0]
+        console.log(filter)
+        setFilter(filter.id ?? '')
       })
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
-  }, [jwt])
+  }, [getFilters])
 
+  const doCreateAlert = useCreateAlert()
   const createAlert = (tgId: string) => {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    axios
-      .post(
-        'https://api.notifi.network/api/gql',
-        {
-          query: `mutation createAlert {
-              createAlert(alertInput: {
-                sourceGroupId: "${sourceGroup}",
-                filterId: "${filter}",
-                targetGroupId: "${tgId}",
-              }) {
-                id
-                name
-              }
-            }`,
-        },
-        config
-      )
+    doCreateAlert({
+      sourceGroupId: sourceGroup,
+      filterId: filter,
+      targetGroupId: tgId,
+    })
       .then((resp) => {
-        console.log(resp.data.data.filter[0])
-        setFilter(resp.data.data.filter[0].id)
+        // TODO: find out why we set filter here
+        const filter = resp.filter[0]
+        console.log(filter)
+        setFilter(filter.id ?? '')
       })
       .catch((err) => {
         console.log('Request failed: ' + JSON.stringify(err))
       })
   }
 
-  const createEmailTarget = async function (): Promise<string> {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    return new Promise<string>((resolve, reject) => {
-      axios
-        .post(
-          'https://api.notifi.network/api/gql',
-          {
-            query: `mutation createEmailTarget {
-          createEmailTarget(createTargetInput: {
-            name: "${email}",
-            value: "${email}"
-          }) {
-            id
-            name
-          }
-        }`,
-          },
-          config
-        )
-        .then((resp) => {
-          console.log(
-            'createEmailTarget: ' + resp.data.data.createEmailTarget.id
-          )
-          setStoredEmailId(resp.data.data.createEmailTarget.id)
-          resolve(resp.data.data.createEmailTarget.id)
-        })
-        .catch((err) => {
-          console.log('Request failed: ' + JSON.stringify(err))
-          reject(err)
-        })
+  const doCreateEmailTarget = useCreateEmailTarget()
+  const createEmailTarget = async (): Promise<string> => {
+    const emailTarget = await doCreateEmailTarget({
+      name: email,
+      value: email,
     })
+
+    console.log('createEmailTarget: ' + emailTarget.id)
+    setStoredEmailId(emailTarget.id ?? '')
+
+    return emailTarget.id!
   }
 
-  const createSmsTarget = async function (): Promise<string> {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    return new Promise<string>((resolve, reject) => {
-      axios
-        .post(
-          'https://api.notifi.network/api/gql',
-          {
-            query: `mutation createSmsTarget {
-              createSmsTarget(createTargetInput: {
-                name: "${phone}",
-                value: "${phone}"
-              }) {
-                id
-                name
-              }
-            }`,
-          },
-          config
-        )
-        .then((resp) => {
-          console.log(resp.data.data.createSmsTarget)
-          resolve(resp.data.data.createSmsTarget.id)
-        })
-        .catch((err) => {
-          console.log('Request failed: ' + JSON.stringify(err))
-          reject(err)
-        })
+  const doCreateSmsTarget = useCreateSmsTarget()
+  const createSmsTarget = async (): Promise<string> => {
+    const smsTarget = await doCreateSmsTarget({
+      name: phone,
+      value: phone,
     })
+
+    console.log(smsTarget)
+    return smsTarget.id!
   }
 
-  const createTelegramTarget = async function (): Promise<string> {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
-    }
-    return new Promise<string>((resolve, reject) => {
-      axios
-        .post(
-          'https://api.notifi.network/api/gql',
-          {
-            query: `mutation createTelegramTarget {
-              createTelegramTarget(createTargetInput: {
-                name: "${telegram}",
-                value: "${telegram}"
-              }) {
-                id
-                name
-                telegramId
-              }
-            }`,
-          },
-          config
-        )
-        .then((resp) => {
-          console.log(resp.data.data.createTelegramTarget)
-          resolve(resp.data.data.createTelegramTarget.id)
-          let telegramLink =
-            'https://t.me/NotifiNetworkBot?start=' +
-            resp.data.data.createTelegramTarget.telegramId
-          setTelegram(telegramLink)
-          setStoredTelegram(telegramLink)
-          window.open(telegramLink)
-        })
-        .catch((err) => {
-          console.log('Request failed: ' + JSON.stringify(err))
-          reject(err)
-        })
+  const doCreateTelegramTarget = useCreateTelegramTarget()
+  const createTelegramTarget = async (): Promise<string> => {
+    const telegramTarget = await doCreateTelegramTarget({
+      name: telegram,
+      value: telegram,
     })
+
+    console.log(telegramTarget)
+
+    const telegramLink =
+      'https://t.me/NotifiNetworkBot?start=' + telegramTarget.telegramId!
+    setTelegram(telegramLink)
+    setStoredTelegram(telegramLink)
+    window.open(telegramLink)
+
+    return telegramTarget.id!
   }
 
+  const doUpdateTargetGroup = useUpdateTargetGroup()
   const updateTargetGroup = async function (
     emailId: string,
     smsId: string,
     telegramId: string
   ): Promise<string> {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
+    const emailTargetIds: string[] = []
+    if (emailId !== '') {
+      emailTargetIds.push(emailId)
     }
-    let emailIds = new Array<string>()
-    emailIds.push(emailId)
-    let smsIds = new Array<string>()
-    smsIds.push(smsId)
 
-    return new Promise<string>((resolve, reject) => {
-      axios
-        .post(
-          'https://api.notifi.network/api/gql',
-          {
-            query: `mutation createTargetGroup($targetGroupInput: TargetGroupInput!) {
-              createTargetGroup(targetGroupInput: $targetGroupInput) {
-                id
-                name
-              }
-            }`,
-            variables: {
-              targetGroupInput: {
-                id: targetGroup,
-                emailTargetIds: emailIds,
-                smsTargetIds: smsIds,
-                name: 'husky dao notifications',
-              },
-            },
-          },
-          config
-        )
-        .then((resp) => {
-          console.log(resp)
-          resolve(resp.data.data.createTargetGroup.id)
-        })
-        .catch((err) => {
-          console.log('Request failed: ' + JSON.stringify(err))
-          reject(err)
-        })
+    const smsTargetIds: string[] = []
+    if (smsId !== '') {
+      smsTargetIds.push(smsId)
+    }
+
+    const telegramTargetIds: string[] = []
+    if (telegramId !== '') {
+      telegramTargetIds.push(telegramId)
+    }
+
+    const resp = await doUpdateTargetGroup({
+      targetGroupId: targetGroup,
+      name: 'husky dao notifications',
+      emailTargetIds,
+      smsTargetIds,
+      telegramTargetIds,
     })
+
+    console.log(resp)
+    return resp.id!
   }
 
+  const createTargetGroup = useCreateTargetGroup()
   const createNewTargetGroup = async function (
     emailId: string,
     smsId: string,
     telegramId: string
   ): Promise<string> {
-    const config = {
-      headers: { Authorization: `Bearer ${jwt}` },
+    const emailTargetIds: string[] = []
+    if (emailId !== '') {
+      emailTargetIds.push(emailId)
     }
-    console.log(storedEmailId)
-    return new Promise<string>((resolve, reject) => {
-      console.log('emailId: ' + emailId)
-      axios
-        .post(
-          'https://api.notifi.network/api/gql',
-          {
-            query: `mutation createTargetGroup {
-              createTargetGroup(targetGroupInput: {
-                emailTargetIds: ["${emailId}"],
-                name: "husky dao notifications"
-              }) {
-                id
-                name
-              }
-            }`,
-          },
-          config
-        )
-        .then((resp) => {
-          console.log(resp.data.data.createTargetGroup)
-          resolve(resp.data.data.createTargetGroup.id)
-        })
-        .catch((err) => {
-          console.log('Request failed: ' + JSON.stringify(err))
-          reject(err)
-        })
+
+    const smsTargetIds: string[] = []
+    if (smsId !== '') {
+      smsTargetIds.push(smsId)
+    }
+
+    const telegramTargetIds: string[] = []
+    if (telegramId !== '') {
+      telegramTargetIds.push(telegramId)
+    }
+
+    const resp = await createTargetGroup({
+      name: 'husky dao notifications',
+      emailTargetIds,
+      smsTargetIds,
+      telegramTargetIds,
     })
+
+    console.log(resp)
+    return resp.id!
   }
 
   const handleError = (errors: { message: string }[]) => {
@@ -431,14 +283,16 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
     setLoading(false)
   }
 
+  const { jwtRef } = useNotifiJwt()
+  const logInFromDao = useLoginFromDao()
   const handleSave = async function () {
     setLoading(true)
     // user is not authenticated
-    if (!jwt && wallet) {
+    if (!jwtRef.current && wallet && wallet.publicKey) {
       console.log(wallet)
-      console.log(jwt)
+      console.log(jwtRef.current)
       const ticks = Math.round(Date.now() / 1000)
-      const signature = (wallet as any).signMessage(
+      const p = await (wallet as any).signMessage(
         new TextEncoder().encode(
           `${wallet?.publicKey}` +
             'HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy' +
@@ -446,47 +300,27 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
         ),
         'utf8'
       )
-      signature
-        .then((p) => {
-          console.log('signature completed')
-          console.log(p.buffer)
-          console.log(bufferToBase64(p))
-          axios
-            .post('https://api.notifi.network/api/gql', {
-              query: `mutation logInFromDao {
-            logInFromDao(daoLogInInput: {
-              walletPublicKey: "${wallet?.publicKey}",
-              tokenAddress: "HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy",
-              timestamp: ${ticks}
-            }, signature: "${bufferToBase64(p)}") {
-              email
-              emailConfirmed
-              token
-            }
-          }`,
-            })
-            .then((resp) => {
-              console.log(resp)
-              if (resp.data.data.logInFromDao != null) {
-                setJwt(resp['data'].data.logInFromDao.token!)
-                getExistingTargetGroup()
-                getFilter()
-                getSourceGroup()
-              } else {
-                handleError(resp.data.errors ?? [])
-              }
-            })
-            .catch((err) => {
-              console.log('Request failed: ' + JSON.stringify(err))
-            })
+
+      try {
+        const resp = logInFromDao({
+          walletPublicKey: wallet.publicKey.toString(),
+          tokenAddress: 'HgLym6eZnMZhzXn9tEtfWY18ubDrFb99f81Dke7ZaaNy',
+          timestamp: ticks,
+          signature: bufferToBase64(p),
         })
-        .catch((err) => {
-          console.log('Failed to sign request. ' + JSON.stringify(err))
-        })
-        .finally(() => setLoading(false))
+
+        console.log(resp)
+
+        getExistingTargetGroup()
+        getFilter()
+        getSourceGroup()
+      } catch (e) {
+        handleError([e])
+      }
+      setLoading(false)
     }
 
-    if (connected && jwt) {
+    if (connected && jwtRef.current) {
       console.log('Sending')
       console.log(email)
       console.log(storedEmail)
@@ -544,12 +378,12 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
   }
 
   useEffect(() => {
-    if (connected && jwt != null) {
+    if (connected && jwtRef.current != null) {
       getExistingTargetGroup()
       getFilter()
       getSourceGroup()
     }
-  }, [jwt, connected])
+  }, [jwtRef, connected])
 
   return (
     <div className="bg-bkg-2 p-4 md:p-6 rounded-lg">
@@ -570,7 +404,7 @@ const NotificationsCard = ({ proposal }: { proposal?: Option<Proposal> }) => {
               {errorMessage.length > 0 ? (
                 <div className="text-sm text-red">{errorMessage}</div>
               ) : (
-                !jwt && (
+                !jwtRef.current && (
                   <div className="text-sm text-fgd-3">
                     When prompted, sign the transaction.
                   </div>
@@ -803,6 +637,7 @@ const TokenDeposit = ({
               await withFinalizeVote(
                 instructions,
                 realmInfo!.programId,
+                realmInfo!.programVersion!,
                 realm!.pubkey,
                 proposal.account.governance,
                 proposal.pubkey,
