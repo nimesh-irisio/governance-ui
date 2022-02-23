@@ -21,6 +21,7 @@ import useTreasuryAccountStore from 'stores/useTreasuryAccountStore'
 import { usePrevious } from '@hooks/usePrevious'
 import TokenBalanceCardWrapper from '@components/TokenBalance/TokenBalanceCardWrapper'
 import ApproveAllBtn from './proposal/components/ApproveAllBtn'
+import NotificationsCard from '@components/NotificationsCard'
 
 const compareProposals = (
   p1: Proposal,
@@ -180,6 +181,7 @@ const REALM = () => {
           </div>
         </div>
         <div className="col-span-12 md:col-span-5 lg:col-span-4 space-y-4">
+          <NotificationsCard />
           <TokenBalanceCardWrapper />
           <NFTSCompactWrapper></NFTSCompactWrapper>
           <AccountsCompactWrapper />
