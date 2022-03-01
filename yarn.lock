@@ -1321,11 +1321,17 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@notifi-network/notifi-react-hooks@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@notifi-network/notifi-react-hooks/-/notifi-react-hooks-0.0.3.tgz#a57ad98fa12a76de47e1f42f8d07bc7f7a2a6f11"
-  integrity sha512-IZ1xpl3DfTIBfK213HVdt18HYS1LHSdhzoLE9c4nnOmTpwkvNVKz1cMJ5FAg5Ck/1xH0i5WechSuBScQSCEc6A==
+"@notifi-network/notifi-axios-adapter@^0.0.3":
+  version "0.0.4-alpha.25"
+  resolved "https://registry.yarnpkg.com/@notifi-network/notifi-axios-adapter/-/notifi-axios-adapter-0.0.4-alpha.25.tgz#6631242f24e49b418eee76b0d4b1256aa2f17813"
+  integrity sha512-5ZHzCWWE6iM8r8ZZriHFwdU7Ex6b2MkIRU4UxC9hh2aIDkZkvpPDRw0vMexdPJNECI7jFhjopVXsimVd04qA0Q==
+
+"@notifi-network/notifi-react-hooks@^0.0.4-alpha.26":
+  version "0.0.4-alpha.26"
+  resolved "https://registry.yarnpkg.com/@notifi-network/notifi-react-hooks/-/notifi-react-hooks-0.0.4-alpha.26.tgz#1b2ee1206d5ca2768a3cce4f5a3bcec82b6784a4"
+  integrity sha512-RhWuosxb1s4hNquxyZy+N/T26eDg2K5WyKxAnyn0qfEJeWJY9smD9wK/bRSS2191rVe+uQsLhqER/ShXVWiSDg==
   dependencies:
+    "@notifi-network/notifi-axios-adapter" "^0.0.3"
     axios "^0.26.0"
     typescript "^4.5.5"
     use-local-storage-state "^15.0.0"
