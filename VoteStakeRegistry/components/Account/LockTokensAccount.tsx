@@ -167,7 +167,7 @@ const LockTokensAccount = ({ tokenOwnerRecordPk }) => {
     }
   }, [realm?.pubkey.toBase58(), wallet?.connected, tokenOwnerRecordPk])
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <div className="bg-bkg-2 col-span-12 md:order-first order-last p-4 md:p-6 rounded-lg relative">
         {isLoading && (
           <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center">
@@ -288,9 +288,8 @@ const LockTokensAccount = ({ tokenOwnerRecordPk }) => {
           ></LockTokensModal>
         )}
       </div>
-      <br />
       {realmInfo?.enableNotifications && <NotificationsCard />}
-    </>
+    </div>
   )
 }
 
