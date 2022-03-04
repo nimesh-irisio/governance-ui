@@ -94,7 +94,6 @@ const NotificationsCard = () => {
       } catch (e) {
         handleError([e])
       }
-      setLoading(false)
     }
 
     if (connected && isAuthenticated()) {
@@ -104,9 +103,10 @@ const NotificationsCard = () => {
         await updateAlert({
           name: `${realm?.account.name} notifications`,
           emailAddress: email === '' ? null : email,
-          phoneNumber: phone === '' ? null : phone,
+          phoneNumber: phone.length < 12 ? null : phone,
           telegramId: telegram === '' ? null : telegram,
         })
+        setUnsavedChanges(false)
       } catch (e) {
         handleError([e])
       }
@@ -139,6 +139,8 @@ const NotificationsCard = () => {
     setTelegram(e.target.value)
     setUnsavedChanges(true)
   }
+
+  const disabled = isAuthenticated() && !hasUnsavedChanges
 
   return (
     <div className="bg-bkg-2 p-4 md:p-6 rounded-lg">
@@ -215,12 +217,14 @@ const NotificationsCard = () => {
               {
                 <Button
                   tooltipMessage={
-                    isAuthenticated()
+                    disabled
+                      ? 'No unsaved changes!'
+                      : isAuthenticated()
                       ? 'Save settings for notifications'
-                      : 'Fetch stored values'
+                      : 'Fetch stored values for existing accounts'
                   }
                   className="sm:w-1/2"
-                  disabled={isAuthenticated() && hasUnsavedChanges}
+                  disabled={disabled}
                   onClick={
                     hasUnsavedChanges || isAuthenticated()
                       ? handleSave
