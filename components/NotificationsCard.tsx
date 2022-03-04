@@ -24,7 +24,13 @@ const NotificationsCard = () => {
 
   const wallet = useWalletStore((s) => s.current)
   const connected = useWalletStore((s) => s.connected)
-  const { data, logIn, isAuthenticated, updateAlert } = useNotifiClient({
+  const {
+    data,
+    logIn,
+    isAuthenticated,
+    updateAlert,
+    fetchData,
+  } = useNotifiClient({
     daoAddress: realm?.pubkey?.toBase58() ?? '',
     walletPublicKey: wallet?.publicKey?.toString() ?? '',
     env: BlockchainEnvironment.MainNetBeta,
@@ -48,6 +54,33 @@ const NotificationsCard = () => {
       )
     } else {
       setErrorMessage(error?.message ?? 'Unknown error')
+    }
+    setLoading(false)
+  }
+
+  const handleRefresh = async function () {
+    setLoading(true)
+    // user is not authenticated
+    if (!isAuthenticated() && wallet && wallet.publicKey) {
+      try {
+        await logIn(wallet as MessageSigner)
+      } catch (e) {
+        handleError([e])
+      }
+      setLoading(false)
+    }
+
+    // Update fields
+    if (connected && isAuthenticated()) {
+      console.log('Refreshing values')
+      try {
+        const { emailAddress, phoneNumber, telegramId } = await fetchData()
+        setEmail(emailAddress ?? '')
+        setPhone(phoneNumber ?? '')
+        setTelegram(telegramId ?? '')
+      } catch (e) {
+        handleError([e])
+      }
     }
     setLoading(false)
   }
@@ -178,19 +211,26 @@ const NotificationsCard = () => {
                 />
               </InputRow>
             )}
-
-            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-4 justify-end">
-              {hasUnsavedChanges && (
+            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 mt-4 items-center justify-between">
+              {
                 <Button
-                  tooltipMessage="Save settings for notifications"
+                  tooltipMessage={
+                    isAuthenticated()
+                      ? 'Save settings for notifications'
+                      : 'Fetch stored values'
+                  }
                   className="sm:w-1/2"
-                  disabled={!hasUnsavedChanges}
-                  onClick={handleSave}
+                  disabled={isAuthenticated() && hasUnsavedChanges}
+                  onClick={
+                    hasUnsavedChanges || isAuthenticated()
+                      ? handleSave
+                      : handleRefresh
+                  }
                   isLoading={isLoading}
                 >
-                  Save
+                  {hasUnsavedChanges || isAuthenticated() ? 'Save' : 'Refresh'}
                 </Button>
-              )}
+              }
             </div>
           </>
         )
